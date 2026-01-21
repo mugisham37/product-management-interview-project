@@ -28,7 +28,9 @@ import { ProductsModule } from './products/products.module';
           entities: [__dirname + '/**/*.entity{.ts,.js}'],
           synchronize: isDevelopment,
           logging: isDevelopment ? ['error'] : false,
-          ssl: isProduction ? { rejectUnauthorized: false } : false,
+          ssl: isProduction 
+            ? { rejectUnauthorized: true } // Verify certificates in production
+            : { rejectUnauthorized: false }, // Allow self-signed in development
           retryAttempts: 3,
           retryDelay: 1000,
         };
