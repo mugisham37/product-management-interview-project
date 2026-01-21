@@ -91,31 +91,31 @@ This implementation plan follows a phased approach: complete backend development
   - Ensure all tests pass, verify server starts successfully, test API endpoints manually
   - Ask the user if questions arise
 
-- [ ] 8. Set up frontend project structure
-  - [ ] 8.1 Initialize Next.js project in `web/` directory
+- [x] 8. Set up frontend project structure
+  - [x] 8.1 Initialize Next.js project in `web/` directory
     - Set up Next.js with App Router and TypeScript
     - Configure tsconfig.json with strict settings
     - _Requirements: 2.1, 2.4, 2.7_
 
-  - [ ] 8.2 Install and configure dependencies
+  - [x] 8.2 Install and configure dependencies
     - Install Axios for API communication
     - Set up global CSS structure
     - Configure Next.js for development
     - _Requirements: 2.2, 2.6_
 
-  - [ ] 8.3 Create TypeScript interfaces and types
+  - [x] 8.3 Create TypeScript interfaces and types
     - Define Product interface matching backend entity
     - Create API response types and request DTOs
     - Set up type definitions for forms and components
     - _Requirements: 2.4_
 
-- [ ] 9. Implement frontend API client service
-  - [ ] 9.1 Create API client with Axios configuration
+- [x] 9. Implement frontend API client service
+  - [x] 9.1 Create API client with Axios configuration
     - Set up base URL configuration and timeout settings
     - Implement request/response interceptors for error handling
     - _Requirements: 2.2, 8.1, 11.5, 11.6_
 
-  - [ ] 9.2 Implement product API methods
+  - [x] 9.2 Implement product API methods
     - Create methods for getProducts, getProduct, createProduct, updateProduct, deleteProduct
     - Add proper error handling and type safety
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 11.3_
