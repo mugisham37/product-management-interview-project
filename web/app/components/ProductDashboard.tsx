@@ -8,6 +8,7 @@ import { apiClient } from '@/lib/api-client';
 import { ProductCard } from './ProductCard';
 import { LoadingSpinner, PageLoadingSpinner } from './LoadingSpinner';
 import { ErrorMessage, NetworkErrorMessage } from './ErrorMessage';
+import { DeleteConfirmationDialog } from './DeleteConfirmationDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -35,6 +36,11 @@ export function ProductDashboard({ className, onProductCreated, onProductUpdated
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [operationsInProgress, setOperationsInProgress] = useState<Set<string>>(new Set());
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  
+  // Delete confirmation dialog state
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeletingProduct, setIsDeletingProduct] = useState(false);
 
   // Load products with current filters
   const loadProducts = useCallback(async (showRefreshIndicator = false) => {
@@ -91,8 +97,21 @@ export function ProductDashboard({ className, onProductCreated, onProductUpdated
     router.push(`/products/${product.id}/edit`);
   }, [router]);
 
-  // Handle product delete with optimistic updates
-  const handleDelete = useCallback(async (productId: string) => {
+  // Handle product delete initiation - opens confirmation dialog
+  const handleDeleteInitiate = useCallback((productId: string) => {
+    const product = products.find(p => p.id === productId);
+    if (product) {
+      setProductToDelete(product);
+      setIsDeleteDialogOpen(true);
+    }
+  }, [products]);
+
+  // Handle confirmed product delete with optimistic updates
+  const handleDeleteConfirm = useCallback(async (productId: string) => {
+    if (!productToDelete) return;
+
+    setIsDeletingProduct(true);
+    
     // Add to operations in progress
     setOperationsInProgress(prev => new Set(prev).add(`delete-${productId}`));
     
@@ -104,7 +123,10 @@ export function ProductDashboard({ className, onProductCreated, onProductUpdated
 
     try {
       await apiClient.deleteProduct(productId);
-      // Success - the optimistic update is already applied
+      
+      // Success - close dialog and show success message
+      setIsDeleteDialogOpen(false);
+      setProductToDelete(null);
       setSuccessMessage('Product deleted successfully');
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err: unknown) {
@@ -124,6 +146,8 @@ export function ProductDashboard({ className, onProductCreated, onProductUpdated
       // Clear error after 5 seconds
       setTimeout(() => setError(null), 5000);
     } finally {
+      setIsDeletingProduct(false);
+      
       // Remove from operations in progress
       setOperationsInProgress(prev => {
         const newSet = new Set(prev);
@@ -131,7 +155,15 @@ export function ProductDashboard({ className, onProductCreated, onProductUpdated
         return newSet;
       });
     }
-  }, [products]);
+  }, [products, productToDelete]);
+
+  // Handle delete dialog close
+  const handleDeleteCancel = useCallback(() => {
+    if (!isDeletingProduct) {
+      setIsDeleteDialogOpen(false);
+      setProductToDelete(null);
+    }
+  }, [isDeletingProduct]);
 
   // Handle optimistic product creation
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -502,7 +534,7 @@ export function ProductDashboard({ className, onProductCreated, onProductUpdated
                 <ProductCard
                   product={product}
                   onEdit={handleEdit}
-                  onDelete={handleDelete}
+                  onDelete={handleDeleteInitiate}
                 />
                 {/* Operation in progress overlay */}
                 {operationsInProgress.has(`delete-${product.id}`) && (
@@ -518,6 +550,15 @@ export function ProductDashboard({ className, onProductCreated, onProductUpdated
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        product={productToDelete}
+        open={isDeleteDialogOpen}
+        isDeleting={isDeletingProduct}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+      />
     </div>
   );
 }
