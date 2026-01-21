@@ -1,5 +1,6 @@
 // Core components
 export { ProductCard } from './ProductCard';
+export { ProductForm } from './ProductForm';
 export { 
   LoadingSpinner, 
   InlineSpinner, 

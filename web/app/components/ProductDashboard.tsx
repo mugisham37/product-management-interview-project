@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Product, ProductQueryParams } from '@/app/types';
 import { apiClient } from '@/lib/api-client';
 import { ProductCard } from './ProductCard';
@@ -20,6 +21,8 @@ interface ProductDashboardProps {
 }
 
 export function ProductDashboard({ className, onProductCreated, onProductUpdated }: ProductDashboardProps) {
+  const router = useRouter();
+  
   // State management
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -85,9 +88,8 @@ export function ProductDashboard({ className, onProductCreated, onProductUpdated
 
   // Handle product edit
   const handleEdit = useCallback((product: Product) => {
-    // TODO: Navigate to edit page when forms are implemented
-    console.log('Edit product:', product.id);
-  }, []);
+    router.push(`/products/${product.id}/edit`);
+  }, [router]);
 
   // Handle product delete with optimistic updates
   const handleDelete = useCallback(async (productId: string) => {
