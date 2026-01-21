@@ -9,7 +9,6 @@ import { ProductCard } from './ProductCard';
 import { LoadingSpinner, PageLoadingSpinner } from './LoadingSpinner';
 import { ErrorMessage, NetworkErrorMessage } from './ErrorMessage';
 import { DeleteConfirmationDialog } from './DeleteConfirmationDialog';
-import { PageHeader } from './PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -266,45 +265,27 @@ export function ProductDashboard({ className, onProductCreated, onProductUpdated
   }
 
   return (
-    <div className={`container mx-auto px-4 py-8 ${className || ''}`}>
+    <div className={`product-dashboard ${className || ''}`}>
       {/* Header */}
-      <PageHeader
-        title="Product Management"
-        description="Manage your product inventory and catalog"
-        actions={
-          <>
-            <Button
-              variant="outline"
-              onClick={() => loadProducts(true)}
-              disabled={isRefreshing}
-              className="shrink-0"
-            >
-              {isRefreshing ? (
-                <>
-                  <LoadingSpinner size="sm" className="mr-2" />
-                  Refreshing...
-                </>
-              ) : (
-                <>
-                  <svg
-                    className="w-4 h-4 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                    />
-                  </svg>
-                  Refresh
-                </>
-              )}
-            </Button>
-            <Link href="/products/new">
-              <Button className="shrink-0">
+      <div className="dashboard-header">
+        <div>
+          <h1 className="page-title">Product Management</h1>
+          <p className="page-subtitle">Manage your product inventory and catalog</p>
+        </div>
+        <div className="dashboard-actions">
+          <Button
+            variant="outline"
+            onClick={() => loadProducts(true)}
+            disabled={isRefreshing}
+            className="shrink-0"
+          >
+            {isRefreshing ? (
+              <>
+                <LoadingSpinner size="sm" className="mr-2" />
+                Refreshing...
+              </>
+            ) : (
+              <>
                 <svg
                   className="w-4 h-4 mr-2"
                   fill="none"
@@ -315,25 +296,43 @@ export function ProductDashboard({ className, onProductCreated, onProductUpdated
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M12 4v16m8-8H4"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                   />
                 </svg>
-                Add Product
-              </Button>
-            </Link>
-          </>
-        }
-      />
+                Refresh
+              </>
+            )}
+          </Button>
+          <Link href="/products/new">
+            <Button className="shrink-0">
+              <svg
+                className="w-4 h-4 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              Add Product
+            </Button>
+          </Link>
+        </div>
+      </div>
 
       {/* Filters and Search */}
       <Card className="mb-6">
-        <CardHeader>
+        <CardHeader className="pb-4">
           <CardTitle className="text-lg">Filters & Search</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4">
-            {/* Search Input */}
-            <div className="flex-1">
+          <div className="space-y-4">
+            {/* Search Input - Full width on mobile */}
+            <div className="w-full">
               <Input
                 placeholder="Search products by name, description, or SKU..."
                 value={searchQuery}
@@ -342,54 +341,64 @@ export function ProductDashboard({ className, onProductCreated, onProductUpdated
               />
             </div>
 
-            {/* Category Filter */}
-            <div className="w-full sm:w-48">
-              <Select value={selectedCategory || 'all'} onValueChange={handleCategoryChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Categories" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Filters Row - Stack on mobile, side by side on larger screens */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              {/* Category Filter */}
+              <div className="flex-1 min-w-0">
+                <Select value={selectedCategory || 'all'} onValueChange={handleCategoryChange}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="All Categories" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {categories.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            {/* Sort Options */}
-            <div className="w-full sm:w-48">
-              <Select 
-                value={`${sortBy}-${sortOrder}`} 
-                onValueChange={(value) => {
-                  const [field, order] = value.split('-');
-                  handleSortChange(field, order);
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="createdAt-DESC">Newest First</SelectItem>
-                  <SelectItem value="createdAt-ASC">Oldest First</SelectItem>
-                  <SelectItem value="name-ASC">Name A-Z</SelectItem>
-                  <SelectItem value="name-DESC">Name Z-A</SelectItem>
-                  <SelectItem value="price-ASC">Price Low-High</SelectItem>
-                  <SelectItem value="price-DESC">Price High-Low</SelectItem>
-                  <SelectItem value="quantity-ASC">Stock Low-High</SelectItem>
-                  <SelectItem value="quantity-DESC">Stock High-Low</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+              {/* Sort Options */}
+              <div className="flex-1 min-w-0">
+                <Select 
+                  value={`${sortBy}-${sortOrder}`} 
+                  onValueChange={(value) => {
+                    const [field, order] = value.split('-');
+                    handleSortChange(field, order);
+                  }}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="createdAt-DESC">Newest First</SelectItem>
+                    <SelectItem value="createdAt-ASC">Oldest First</SelectItem>
+                    <SelectItem value="name-ASC">Name A-Z</SelectItem>
+                    <SelectItem value="name-DESC">Name Z-A</SelectItem>
+                    <SelectItem value="price-ASC">Price Low-High</SelectItem>
+                    <SelectItem value="price-DESC">Price High-Low</SelectItem>
+                    <SelectItem value="quantity-ASC">Stock Low-High</SelectItem>
+                    <SelectItem value="quantity-DESC">Stock High-Low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            {/* Clear Filters */}
-            {(searchQuery || selectedCategory || sortBy !== 'createdAt' || sortOrder !== 'DESC') && (
-              <Button variant="outline" onClick={clearFilters} className="shrink-0">
-                Clear Filters
-              </Button>
-            )}
+              {/* Clear Filters - Full width on mobile */}
+              {(searchQuery || selectedCategory || sortBy !== 'createdAt' || sortOrder !== 'DESC') && (
+                <Button 
+                  variant="outline" 
+                  onClick={clearFilters} 
+                  className="w-full sm:w-auto shrink-0"
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Clear Filters
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Active Filters Display */}
@@ -429,7 +438,7 @@ export function ProductDashboard({ className, onProductCreated, onProductUpdated
       {/* Success Message */}
       {successMessage && (
         <div className="mb-6">
-          <div className="flex items-center gap-3 p-4 border border-green-200 bg-green-50 text-green-800 rounded-md">
+          <div className="success-message">
             <svg
               className="w-5 h-5 text-green-600 shrink-0"
               fill="none"
@@ -489,11 +498,11 @@ export function ProductDashboard({ className, onProductCreated, onProductUpdated
 
         {/* Products Grid */}
         {products.length === 0 ? (
-          <Card className="p-12">
+          <Card className="p-8 sm:p-12">
             <div className="text-center space-y-4">
-              <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+              <div className="mx-auto w-12 h-12 sm:w-16 sm:h-16 bg-muted rounded-full flex items-center justify-center">
                 <svg
-                  className="w-8 h-8 text-muted-foreground"
+                  className="w-6 h-6 sm:w-8 sm:h-8 text-muted-foreground"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -508,26 +517,26 @@ export function ProductDashboard({ className, onProductCreated, onProductUpdated
               </div>
               <div>
                 <h3 className="text-lg font-semibold">No products found</h3>
-                <p className="text-muted-foreground">
+                <p className="text-muted-foreground text-sm sm:text-base">
                   {searchQuery || selectedCategory
                     ? 'Try adjusting your search criteria or filters.'
                     : 'Get started by adding your first product.'}
                 </p>
               </div>
-              <div className="flex justify-center gap-3">
+              <div className="flex flex-col sm:flex-row justify-center gap-3">
                 {(searchQuery || selectedCategory) && (
-                  <Button variant="outline" onClick={clearFilters}>
+                  <Button variant="outline" onClick={clearFilters} className="w-full sm:w-auto">
                     Clear Filters
                   </Button>
                 )}
-                <Link href="/products/new">
-                  <Button>Add Your First Product</Button>
+                <Link href="/products/new" className="w-full sm:w-auto">
+                  <Button className="w-full">Add Your First Product</Button>
                 </Link>
               </div>
             </div>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="product-grid">
             {products.map((product) => (
               <div key={product.id} className="relative">
                 <ProductCard
@@ -537,7 +546,7 @@ export function ProductDashboard({ className, onProductCreated, onProductUpdated
                 />
                 {/* Operation in progress overlay */}
                 {operationsInProgress.has(`delete-${product.id}`) && (
-                  <div className="absolute inset-0 bg-background/80 backdrop-blur-sm rounded-lg flex items-center justify-center z-10">
+                  <div className="loading-overlay">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <LoadingSpinner size="sm" />
                       Deleting...

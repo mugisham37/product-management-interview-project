@@ -28,13 +28,13 @@ export function MainLayout({ children }: MainLayoutProps) {
       {/* Navigation Header */}
       <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
         <div className="container mx-auto px-4">
-          <div className="flex h-16 items-center justify-between">
+          <div className="flex h-14 sm:h-16 items-center justify-between">
             {/* Logo and Brand */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               <Link href="/" className="flex items-center space-x-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                   <svg
-                    className="h-5 w-5"
+                    className="h-4 w-4 sm:h-5 sm:w-5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -47,7 +47,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                     />
                   </svg>
                 </div>
-                <span className="hidden font-bold sm:inline-block">
+                <span className="hidden font-bold sm:inline-block text-sm sm:text-base">
                   Product Manager
                 </span>
               </Link>
@@ -59,10 +59,10 @@ export function MainLayout({ children }: MainLayoutProps) {
                 <Button
                   variant={isActive('/') ? 'default' : 'ghost'}
                   size="sm"
-                  className="relative"
+                  className="relative text-xs sm:text-sm px-2 sm:px-3"
                 >
                   <svg
-                    className="mr-2 h-4 w-4"
+                    className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -89,9 +89,10 @@ export function MainLayout({ children }: MainLayoutProps) {
                 <Button
                   variant={isActive('/products/new') ? 'default' : 'ghost'}
                   size="sm"
+                  className="text-xs sm:text-sm px-2 sm:px-3"
                 >
                   <svg
-                    className="mr-2 h-4 w-4"
+                    className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"

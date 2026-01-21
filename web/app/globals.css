@@ -177,28 +177,151 @@
 }
 
 /* Product Management App Specific Styles */
+
+/* Layout Components */
+.main-layout {
+  @apply min-h-screen bg-background;
+}
+
+.page-container {
+  @apply container mx-auto px-4 py-6 sm:px-6 lg:px-8;
+}
+
+.content-wrapper {
+  @apply max-w-7xl mx-auto;
+}
+
+/* Navigation and Header */
+.page-header {
+  @apply mb-8;
+}
+
+.page-title {
+  @apply text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-2;
+}
+
+.page-subtitle {
+  @apply text-sm sm:text-base text-muted-foreground;
+}
+
+.breadcrumbs {
+  @apply flex items-center space-x-2 text-sm text-muted-foreground mb-4;
+}
+
+.breadcrumb-separator {
+  @apply text-muted-foreground/50;
+}
+
+/* Dashboard Specific Styles */
 .product-dashboard {
-  @apply container mx-auto px-4 py-8;
+  @apply page-container;
 }
 
 .dashboard-header {
-  @apply flex justify-between items-center mb-8;
+  @apply flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8;
 }
 
 .dashboard-header h1 {
-  @apply text-3xl font-bold text-foreground;
+  @apply page-title mb-0;
 }
 
+.dashboard-actions {
+  @apply flex flex-col sm:flex-row gap-3;
+}
+
+.dashboard-stats {
+  @apply grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8;
+}
+
+.stat-card {
+  @apply bg-card border border-border rounded-lg p-4 shadow-sm;
+}
+
+.stat-value {
+  @apply text-2xl font-bold text-foreground;
+}
+
+.stat-label {
+  @apply text-sm text-muted-foreground;
+}
+
+/* Product Grid and Cards */
 .product-grid {
-  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6;
+  @apply grid gap-4 sm:gap-6;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 }
 
 .product-card {
-  @apply bg-card border border-border rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow;
+  @apply bg-card border border-border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 hover:scale-[1.02];
 }
 
+.product-card-image {
+  @apply w-full h-48 object-cover bg-muted;
+}
+
+.product-card-content {
+  @apply p-4 sm:p-6;
+}
+
+.product-card-header {
+  @apply mb-3;
+}
+
+.product-card-title {
+  @apply text-lg font-semibold text-foreground mb-1 line-clamp-1;
+}
+
+.product-card-category {
+  @apply text-sm text-muted-foreground;
+}
+
+.product-card-description {
+  @apply text-sm text-muted-foreground mb-4 line-clamp-2;
+}
+
+.product-card-footer {
+  @apply flex justify-between items-center;
+}
+
+.product-card-price {
+  @apply text-lg font-bold text-foreground;
+}
+
+.product-card-quantity {
+  @apply text-sm text-muted-foreground;
+}
+
+.product-card-actions {
+  @apply flex gap-2 mt-4;
+}
+
+/* Form Styles */
 .product-form {
-  @apply max-w-2xl mx-auto bg-card border border-border rounded-lg p-8 shadow-sm;
+  @apply max-w-2xl mx-auto bg-card border border-border rounded-lg shadow-sm;
+}
+
+.form-container {
+  @apply p-6 sm:p-8;
+}
+
+.form-header {
+  @apply mb-6;
+}
+
+.form-title {
+  @apply text-xl sm:text-2xl font-bold text-foreground mb-2;
+}
+
+.form-description {
+  @apply text-sm text-muted-foreground;
+}
+
+.form-grid {
+  @apply grid gap-6;
+}
+
+.form-row {
+  @apply grid grid-cols-1 sm:grid-cols-2 gap-4;
 }
 
 .form-field {
@@ -209,49 +332,415 @@
   @apply text-sm font-medium text-foreground;
 }
 
+.form-label-required::after {
+  @apply text-destructive ml-1;
+  content: "*";
+}
+
 .form-input {
-  @apply w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent;
+  @apply w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-colors;
+}
+
+.form-textarea {
+  @apply form-input min-h-[100px] resize-vertical;
+}
+
+.form-select {
+  @apply form-input cursor-pointer;
 }
 
 .form-error {
-  @apply text-sm text-destructive;
+  @apply text-sm text-destructive flex items-center gap-1;
+}
+
+.form-help {
+  @apply text-xs text-muted-foreground;
+}
+
+.form-actions {
+  @apply flex flex-col sm:flex-row gap-3 pt-6 border-t border-border;
+}
+
+/* Button Styles */
+.btn {
+  @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+}
+
+.btn-sm {
+  @apply px-3 py-1.5 text-xs;
+}
+
+.btn-md {
+  @apply px-4 py-2;
+}
+
+.btn-lg {
+  @apply px-6 py-3 text-base;
 }
 
 .btn-primary {
-  @apply inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+  @apply btn btn-md bg-primary text-primary-foreground hover:bg-primary/90;
 }
 
 .btn-secondary {
-  @apply inline-flex items-center justify-center rounded-md bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground hover:bg-secondary/80 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+  @apply btn btn-md bg-secondary text-secondary-foreground hover:bg-secondary/80;
 }
 
 .btn-destructive {
-  @apply inline-flex items-center justify-center rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+  @apply btn btn-md bg-destructive text-destructive-foreground hover:bg-destructive/90;
 }
 
+.btn-outline {
+  @apply btn btn-md border border-input bg-background hover:bg-accent hover:text-accent-foreground;
+}
+
+.btn-ghost {
+  @apply btn btn-md hover:bg-accent hover:text-accent-foreground;
+}
+
+.btn-link {
+  @apply btn btn-md text-primary underline-offset-4 hover:underline;
+}
+
+/* Loading and State Styles */
 .loading-spinner {
-  @apply animate-spin rounded-full h-8 w-8 border-b-2 border-primary;
+  @apply animate-spin rounded-full border-2 border-current border-t-transparent;
+}
+
+.loading-spinner-sm {
+  @apply loading-spinner h-4 w-4;
+}
+
+.loading-spinner-md {
+  @apply loading-spinner h-6 w-6;
+}
+
+.loading-spinner-lg {
+  @apply loading-spinner h-8 w-8;
+}
+
+.loading-overlay {
+  @apply absolute inset-0 bg-background/50 flex items-center justify-center;
+}
+
+.skeleton {
+  @apply animate-pulse bg-muted rounded;
+}
+
+/* Message and Alert Styles */
+.alert {
+  @apply px-4 py-3 rounded-md border;
+}
+
+.alert-error {
+  @apply alert bg-destructive/10 border-destructive/20 text-destructive;
+}
+
+.alert-success {
+  @apply alert bg-green-50 border-green-200 text-green-800;
+}
+
+.alert-warning {
+  @apply alert bg-yellow-50 border-yellow-200 text-yellow-800;
+}
+
+.alert-info {
+  @apply alert bg-blue-50 border-blue-200 text-blue-800;
 }
 
 .error-message {
-  @apply bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-md;
+  @apply alert-error;
 }
 
 .success-message {
-  @apply bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-md;
+  @apply alert-success;
 }
 
-/* Responsive design utilities */
-@media (max-width: 768px) {
+/* Dialog and Modal Styles */
+.dialog-overlay {
+  @apply fixed inset-0 bg-black/50 z-50;
+}
+
+.dialog-content {
+  @apply fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card border border-border rounded-lg shadow-lg z-50 w-full max-w-md mx-4;
+}
+
+.dialog-header {
+  @apply p-6 pb-4;
+}
+
+.dialog-title {
+  @apply text-lg font-semibold text-foreground;
+}
+
+.dialog-description {
+  @apply text-sm text-muted-foreground mt-1;
+}
+
+.dialog-body {
+  @apply px-6 pb-4;
+}
+
+.dialog-footer {
+  @apply flex justify-end gap-3 p-6 pt-4 border-t border-border;
+}
+
+/* Utility Classes */
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.line-clamp-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+/* Mobile-first responsive utilities */
+.mobile-stack {
+  @apply flex flex-col gap-3;
+}
+
+@media (min-width: 640px) {
+  .mobile-stack {
+    @apply flex-row;
+  }
+}
+
+.mobile-full {
+  @apply w-full;
+}
+
+@media (min-width: 640px) {
+  .mobile-full {
+    @apply w-auto;
+  }
+}
+
+/* Touch-friendly interactive elements */
+.touch-target {
+  @apply min-h-[44px] min-w-[44px];
+}
+
+@media (max-width: 640px) {
+  .touch-target {
+    @apply min-h-[48px] min-w-[48px];
+  }
+}
+
+/* Responsive text sizing */
+.responsive-text-sm {
+  @apply text-xs;
+}
+
+@media (min-width: 640px) {
+  .responsive-text-sm {
+    @apply text-sm;
+  }
+}
+
+.responsive-text-base {
+  @apply text-sm;
+}
+
+@media (min-width: 640px) {
+  .responsive-text-base {
+    @apply text-base;
+  }
+}
+
+.responsive-text-lg {
+  @apply text-base;
+}
+
+@media (min-width: 640px) {
+  .responsive-text-lg {
+    @apply text-lg;
+  }
+}
+
+/* Responsive spacing */
+.responsive-p-sm {
+  @apply p-3;
+}
+
+@media (min-width: 640px) {
+  .responsive-p-sm {
+    @apply p-4;
+  }
+}
+
+@media (min-width: 768px) {
+  .responsive-p-sm {
+    @apply p-6;
+  }
+}
+
+.responsive-gap-sm {
+  @apply gap-2;
+}
+
+@media (min-width: 640px) {
+  .responsive-gap-sm {
+    @apply gap-3;
+  }
+}
+
+@media (min-width: 768px) {
+  .responsive-gap-sm {
+    @apply gap-4;
+  }
+}
+
+/* Responsive Breakpoints and Mobile Optimizations */
+@media (max-width: 640px) {
   .product-grid {
-    @apply grid-cols-1;
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
   
   .dashboard-header {
-    @apply flex-col space-y-4 items-start;
+    @apply flex-col items-start gap-3;
+  }
+  
+  .dashboard-actions {
+    @apply w-full;
   }
   
   .product-form {
-    @apply mx-4 p-6;
+    @apply mx-2;
   }
+  
+  .form-container {
+    @apply p-4;
+  }
+  
+  .form-actions {
+    @apply flex-col gap-3;
+  }
+  
+  .btn {
+    @apply w-full justify-center min-h-[44px];
+  }
+  
+  /* Improve touch targets on mobile */
+  .product-card-actions .btn {
+    @apply min-h-[48px] text-base;
+  }
+  
+  /* Better spacing for mobile forms */
+  .form-row {
+    @apply grid-cols-1 gap-4;
+  }
+  
+  /* Mobile-friendly navigation */
+  .breadcrumbs {
+    @apply text-xs;
+  }
+  
+  /* Optimize card layouts for mobile */
+  .product-card-content {
+    @apply p-4;
+  }
+  
+  .product-card-title {
+    @apply text-base;
+  }
+  
+  .product-card-price {
+    @apply text-base;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 768px) {
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+  }
+  
+  .form-row {
+    @apply grid-cols-1;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+  
+  .form-row {
+    @apply grid-cols-2;
+  }
+}
+
+@media (min-width: 1025px) and (max-width: 1280px) {
+  .product-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+@media (min-width: 1281px) {
+  .product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 2rem;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .btn, .product-card-actions, .dashboard-actions {
+    @apply hidden;
+  }
+  
+  .product-card {
+    @apply break-inside-avoid;
+  }
+  
+  .page-container {
+    @apply px-0;
+  }
+}
+
+/* Focus and Accessibility */
+.focus-visible {
+  @apply outline-none ring-2 ring-ring ring-offset-2;
+}
+
+/* Animation Classes */
+.fade-in {
+  @apply animate-in fade-in duration-200;
+}
+
+.slide-in-from-bottom {
+  @apply animate-in slide-in-from-bottom-2 duration-300;
+}
+
+.slide-in-from-top {
+  @apply animate-in slide-in-from-top-2 duration-300;
+}
+
+/* Dark mode specific adjustments */
+.dark .alert-success {
+  @apply bg-green-900/20 border-green-800/30 text-green-400;
+}
+
+.dark .alert-warning {
+  @apply bg-yellow-900/20 border-yellow-800/30 text-yellow-400;
+}
+
+.dark .alert-info {
+  @apply bg-blue-900/20 border-blue-800/30 text-blue-400;
 }
