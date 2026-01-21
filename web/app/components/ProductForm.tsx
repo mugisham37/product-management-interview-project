@@ -7,6 +7,8 @@ import { Product, CreateProductRequest, UpdateProductRequest } from '@/app/types
 import { apiClient } from '@/lib/api-client';
 import { LoadingSpinner } from './LoadingSpinner';
 import { ErrorMessage } from './ErrorMessage';
+import { useApiErrorHandler } from '@/app/contexts/ErrorContext';
+import { useSuccessFeedback } from '@/app/contexts/ToastContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -54,11 +56,13 @@ export function ProductForm({
   className 
 }: ProductFormProps) {
   const router = useRouter();
+  const handleApiError = useApiErrorHandler();
+  const { showOperationSuccess } = useSuccessFeedback();
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
   const [loadingProduct, setLoadingProduct] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Form setup with react-hook-form
   const form = useForm<FormData>({
@@ -89,8 +93,8 @@ export function ProductForm({
       const data = await apiClient.getCategories();
       setCategories(data);
     } catch (err) {
-      console.error('Failed to load categories:', err);
       // Don't show error for categories as it's not critical
+      console.error('Failed to load categories:', err);
     }
   }, []);
 
@@ -120,7 +124,7 @@ export function ProductForm({
           notes: product.notes || '',
         });
       } catch (err: unknown) {
-        console.error('Failed to load product:', err);
+        handleApiError(err, 'loading product');
         const error = err as { isNetworkError?: boolean; message?: string };
         const errorMessage = error.isNetworkError 
           ? 'Unable to load product. Please check your connection and try again.'
@@ -148,7 +152,7 @@ export function ProductForm({
         notes: initialData.notes || '',
       });
     }
-  }, [mode, productId, initialData, reset]);
+  }, [mode, productId, initialData, reset, handleApiError]);
 
   // Handle form submission
   const onSubmit = async (data: FormData) => {
@@ -178,28 +182,28 @@ export function ProductForm({
 
       if (mode === 'create') {
         result = await apiClient.createProduct(requestData as CreateProductRequest);
-        setSuccessMessage('Product created successfully!');
+        showOperationSuccess('create', result.name);
       } else {
         if (!productId) {
           throw new Error('Product ID is required for update');
         }
         result = await apiClient.updateProduct(productId, requestData as UpdateProductRequest);
-        setSuccessMessage('Product updated successfully!');
+        showOperationSuccess('update', result.name);
       }
 
       // Call success callback
       onSuccess?.(result);
 
-      // Show success message briefly then navigate
-      setTimeout(() => {
-        setSuccessMessage(null);
-        if (!onSuccess) {
+      // Navigate back if no success callback provided
+      if (!onSuccess) {
+        setTimeout(() => {
           router.push('/'); // Navigate back to dashboard
-        }
-      }, 2000);
+        }, 1000);
+      }
 
     } catch (err: unknown) {
-      console.error('Failed to save product:', err);
+      handleApiError(err, `${mode === 'create' ? 'creating' : 'updating'} product`);
+      
       const error = err as { 
         isNetworkError?: boolean; 
         message?: string; 
@@ -268,41 +272,21 @@ export function ProductForm({
   }
 
   return (
-    <div className={`page-container ${className || ''}`}>
+    <div className={`container mx-auto px-4 py-8 ${className || ''}`}>
       {/* Page Header */}
-      <div className="page-header">
-        <h1 className="page-title">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold tracking-tight">
           {mode === 'create' ? 'Add New Product' : 'Edit Product'}
         </h1>
-        <p className="page-subtitle">
+        <p className="text-muted-foreground mt-2">
           {mode === 'create' 
             ? 'Fill in the details below to add a new product to your inventory.'
             : 'Update the product information below.'}
         </p>
       </div>
 
-      <Card className="product-form">
-        <CardContent className="form-container">
-          {/* Success Message */}
-          {successMessage && (
-            <div className="mb-6 success-message">
-              <svg
-                className="w-5 h-5 text-green-600 shrink-0"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span className="font-medium">{successMessage}</span>
-            </div>
-          )}
-
+      <Card className="max-w-4xl mx-auto">
+        <CardContent className="p-6">
           {/* Error Message */}
           {error && (
             <div className="mb-6">
@@ -316,7 +300,7 @@ export function ProductForm({
           )}
 
           <Form {...form}>
-            <form onSubmit={handleSubmit(onSubmit)} className="form-grid">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
               {/* Basic Information */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Basic Information</h3>
@@ -331,16 +315,15 @@ export function ProductForm({
                     maxLength: { value: 255, message: 'Product name must be less than 255 characters' }
                   }}
                   render={({ field }) => (
-                    <FormItem className="form-field">
-                      <FormLabel className="form-label form-label-required">Product Name</FormLabel>
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Product Name *</FormLabel>
                       <FormControl>
                         <Input
-                          className="form-input"
                           placeholder="Enter product name"
                           {...field}
                         />
                       </FormControl>
-                      <FormMessage className="form-error" />
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -354,16 +337,15 @@ export function ProductForm({
                     minLength: { value: 1, message: 'Product description cannot be empty' }
                   }}
                   render={({ field }) => (
-                    <FormItem className="form-field">
-                      <FormLabel className="form-label form-label-required">Description</FormLabel>
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Description *</FormLabel>
                       <FormControl>
                         <Textarea
-                          className="form-textarea"
                           placeholder="Enter product description"
                           {...field}
                         />
                       </FormControl>
-                      <FormMessage className="form-error" />
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -376,11 +358,11 @@ export function ProductForm({
                     required: 'Product category is required'
                   }}
                   render={({ field }) => (
-                    <FormItem className="form-field">
-                      <FormLabel className="form-label form-label-required">Category</FormLabel>
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Category *</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger className="form-select">
+                          <SelectTrigger>
                             <SelectValue placeholder="Select a category" />
                           </SelectTrigger>
                         </FormControl>
@@ -396,7 +378,7 @@ export function ProductForm({
                           </SelectItem>
                         </SelectContent>
                       </Select>
-                      <FormMessage className="form-error" />
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -411,17 +393,16 @@ export function ProductForm({
                       maxLength: { value: 100, message: 'Category must be less than 100 characters' }
                     }}
                     render={({ field }) => (
-                      <FormItem className="form-field">
-                        <FormLabel className="form-label form-label-required">Custom Category</FormLabel>
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">Custom Category *</FormLabel>
                         <FormControl>
                           <Input
-                            className="form-input"
                             placeholder="Enter custom category"
                             {...field}
                             onChange={(e) => field.onChange(e.target.value)}
                           />
                         </FormControl>
-                        <FormMessage className="form-error" />
+                        <FormMessage />
                       </FormItem>
                     )}
                   />
@@ -432,7 +413,7 @@ export function ProductForm({
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Pricing & Inventory</h3>
                 
-                <div className="form-row">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Price */}
                   <FormField
                     control={form.control}
@@ -443,11 +424,10 @@ export function ProductForm({
                       max: { value: 999999.99, message: 'Price must be less than 1,000,000' }
                     }}
                     render={({ field }) => (
-                      <FormItem className="form-field">
-                        <FormLabel className="form-label form-label-required">Price ($)</FormLabel>
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">Price ($) *</FormLabel>
                         <FormControl>
                           <Input
-                            className="form-input"
                             type="number"
                             step="0.01"
                             min="0.01"
@@ -457,7 +437,7 @@ export function ProductForm({
                             onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                           />
                         </FormControl>
-                        <FormMessage className="form-error" />
+                        <FormMessage />
                       </FormItem>
                     )}
                   />
@@ -472,11 +452,10 @@ export function ProductForm({
                       max: { value: 999999, message: 'Quantity must be less than 1,000,000' }
                     }}
                     render={({ field }) => (
-                      <FormItem className="form-field">
-                        <FormLabel className="form-label form-label-required">Quantity</FormLabel>
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">Quantity *</FormLabel>
                         <FormControl>
                           <Input
-                            className="form-input"
                             type="number"
                             min="0"
                             max="999999"
@@ -485,13 +464,13 @@ export function ProductForm({
                             onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
                           />
                         </FormControl>
-                        <FormMessage className="form-error" />
+                        <FormMessage />
                       </FormItem>
                     )}
                   />
                 </div>
 
-                <div className="form-row">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Cost Price */}
                   <FormField
                     control={form.control}
@@ -501,11 +480,10 @@ export function ProductForm({
                       max: { value: 999999.99, message: 'Cost price must be less than 1,000,000' }
                     }}
                     render={({ field }) => (
-                      <FormItem className="form-field">
-                        <FormLabel className="form-label">Cost Price ($)</FormLabel>
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">Cost Price ($)</FormLabel>
                         <FormControl>
                           <Input
-                            className="form-input"
                             type="number"
                             step="0.01"
                             min="0"
@@ -516,7 +494,7 @@ export function ProductForm({
                             onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
                           />
                         </FormControl>
-                        <FormMessage className="form-error" />
+                        <FormMessage />
                       </FormItem>
                     )}
                   />
@@ -530,11 +508,10 @@ export function ProductForm({
                       max: { value: 999999, message: 'Minimum stock level must be less than 1,000,000' }
                     }}
                     render={({ field }) => (
-                      <FormItem className="form-field">
-                        <FormLabel className="form-label">Minimum Stock Level</FormLabel>
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">Minimum Stock Level</FormLabel>
                         <FormControl>
                           <Input
-                            className="form-input"
                             type="number"
                             min="0"
                             max="999999"
@@ -544,7 +521,7 @@ export function ProductForm({
                             onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : 0)}
                           />
                         </FormControl>
-                        <FormMessage className="form-error" />
+                        <FormMessage />
                       </FormItem>
                     )}
                   />
@@ -555,7 +532,7 @@ export function ProductForm({
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Additional Details</h3>
                 
-                <div className="form-row">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* SKU */}
                   <FormField
                     control={form.control}
@@ -564,17 +541,16 @@ export function ProductForm({
                       maxLength: { value: 50, message: 'SKU must be less than 50 characters' }
                     }}
                     render={({ field }) => (
-                      <FormItem className="form-field">
-                        <FormLabel className="form-label">SKU</FormLabel>
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">SKU</FormLabel>
                         <FormControl>
                           <Input
-                            className="form-input"
                             placeholder="Enter SKU"
                             {...field}
                             value={field.value || ''}
                           />
                         </FormControl>
-                        <FormMessage className="form-error" />
+                        <FormMessage />
                       </FormItem>
                     )}
                   />
@@ -588,11 +564,10 @@ export function ProductForm({
                       max: { value: 99999.99, message: 'Weight must be less than 100,000' }
                     }}
                     render={({ field }) => (
-                      <FormItem className="form-field">
-                        <FormLabel className="form-label">Weight (kg)</FormLabel>
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">Weight (kg)</FormLabel>
                         <FormControl>
                           <Input
-                            className="form-input"
                             type="number"
                             step="0.01"
                             min="0"
@@ -603,7 +578,7 @@ export function ProductForm({
                             onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
                           />
                         </FormControl>
-                        <FormMessage className="form-error" />
+                        <FormMessage />
                       </FormItem>
                     )}
                   />
@@ -621,18 +596,17 @@ export function ProductForm({
                     maxLength: { value: 500, message: 'Image URL must be less than 500 characters' }
                   }}
                   render={({ field }) => (
-                    <FormItem className="form-field">
-                      <FormLabel className="form-label">Image URL</FormLabel>
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Image URL</FormLabel>
                       <FormControl>
                         <Input
-                          className="form-input"
                           type="url"
                           placeholder="https://example.com/image.jpg"
                           {...field}
                           value={field.value || ''}
                         />
                       </FormControl>
-                      <FormMessage className="form-error" />
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -642,20 +616,19 @@ export function ProductForm({
                   control={form.control}
                   name="tags"
                   render={() => (
-                    <FormItem className="form-field">
-                      <FormLabel className="form-label">Tags</FormLabel>
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Tags</FormLabel>
                       <FormControl>
                         <Input
-                          className="form-input"
                           placeholder="Enter tags separated by commas"
                           value={tagsValue}
                           onChange={(e) => handleTagsChange(e.target.value)}
                         />
                       </FormControl>
-                      <p className="form-help">
+                      <p className="text-sm text-muted-foreground">
                         Separate multiple tags with commas (e.g., electronics, laptop, gaming)
                       </p>
-                      <FormMessage className="form-error" />
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -665,28 +638,27 @@ export function ProductForm({
                   control={form.control}
                   name="notes"
                   render={({ field }) => (
-                    <FormItem className="form-field">
-                      <FormLabel className="form-label">Notes</FormLabel>
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Notes</FormLabel>
                       <FormControl>
                         <Textarea
-                          className="form-textarea"
                           placeholder="Additional notes about the product"
                           {...field}
                           value={field.value || ''}
                         />
                       </FormControl>
-                      <FormMessage className="form-error" />
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
 
               {/* Form Actions */}
-              <div className="form-actions">
+              <div className="flex flex-col sm:flex-row gap-4 pt-6">
                 <Button
                   type="submit"
                   disabled={loading || !isValid}
-                  className="btn-primary"
+                  className="flex-1 sm:flex-none"
                 >
                   {loading ? (
                     <>
@@ -718,7 +690,7 @@ export function ProductForm({
                   variant="outline"
                   onClick={handleCancel}
                   disabled={loading}
-                  className="btn-outline"
+                  className="flex-1 sm:flex-none"
                 >
                   <svg
                     className="w-4 h-4 mr-2"

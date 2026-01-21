@@ -9,6 +9,8 @@ import { ProductCard } from './ProductCard';
 import { LoadingSpinner, PageLoadingSpinner } from './LoadingSpinner';
 import { ErrorMessage, NetworkErrorMessage } from './ErrorMessage';
 import { DeleteConfirmationDialog } from './DeleteConfirmationDialog';
+import { useApiErrorHandler } from '@/app/contexts/ErrorContext';
+import { useSuccessFeedback } from '@/app/contexts/ToastContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -23,6 +25,8 @@ interface ProductDashboardProps {
 
 export function ProductDashboard({ className, onProductCreated, onProductUpdated }: ProductDashboardProps) {
   const router = useRouter();
+  const handleApiError = useApiErrorHandler();
+  const { showOperationSuccess } = useSuccessFeedback();
   
   // State management
   const [products, setProducts] = useState<Product[]>([]);
@@ -35,7 +39,6 @@ export function ProductDashboard({ className, onProductCreated, onProductUpdated
   const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('DESC');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [operationsInProgress, setOperationsInProgress] = useState<Set<string>>(new Set());
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   
   // Delete confirmation dialog state
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
@@ -68,7 +71,7 @@ export function ProductDashboard({ className, onProductCreated, onProductUpdated
       const data = await apiClient.getProducts(queryParams);
       setProducts(data);
     } catch (err: unknown) {
-      console.error('Failed to load products:', err);
+      handleApiError(err, 'loading products');
       const error = err as { isNetworkError?: boolean; message?: string };
       if (error.isNetworkError) {
         setError('Unable to connect to the server. Please check your internet connection.');
@@ -79,7 +82,7 @@ export function ProductDashboard({ className, onProductCreated, onProductUpdated
       setLoading(false);
       setIsRefreshing(false);
     }
-  }, [searchQuery, selectedCategory, sortBy, sortOrder]);
+  }, [searchQuery, selectedCategory, sortBy, sortOrder, handleApiError]);
 
   // Load categories
   const loadCategories = useCallback(async () => {
@@ -87,8 +90,8 @@ export function ProductDashboard({ className, onProductCreated, onProductUpdated
       const data = await apiClient.getCategories();
       setCategories(data);
     } catch (err) {
-      console.error('Failed to load categories:', err);
       // Don't show error for categories as it's not critical
+      console.error('Failed to load categories:', err);
     }
   }, []);
 
@@ -127,15 +130,15 @@ export function ProductDashboard({ className, onProductCreated, onProductUpdated
       // Success - close dialog and show success message
       setIsDeleteDialogOpen(false);
       setProductToDelete(null);
-      setSuccessMessage('Product deleted successfully');
-      setTimeout(() => setSuccessMessage(null), 3000);
+      showOperationSuccess('delete', productToDelete.name);
     } catch (err: unknown) {
-      console.error('Failed to delete product:', err);
-      
       // Revert optimistic update on failure
       setProducts(originalProducts);
       
-      // Show error message
+      // Handle error through global error handler
+      handleApiError(err, 'deleting product');
+      
+      // Also set local error for immediate feedback
       const error = err as { isNetworkError?: boolean; message?: string };
       const errorMessage = error.isNetworkError 
         ? 'Unable to delete product. Please check your connection and try again.'
@@ -155,7 +158,7 @@ export function ProductDashboard({ className, onProductCreated, onProductUpdated
         return newSet;
       });
     }
-  }, [products, productToDelete]);
+  }, [products, productToDelete, handleApiError, showOperationSuccess]);
 
   // Handle delete dialog close
   const handleDeleteCancel = useCallback(() => {
@@ -166,21 +169,18 @@ export function ProductDashboard({ className, onProductCreated, onProductUpdated
   }, [isDeletingProduct]);
 
   // Handle optimistic product creation
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleOptimisticCreate = useCallback((newProduct: Product) => {
     // Optimistically add the new product to the beginning of the list
     setProducts(prev => [newProduct, ...prev]);
     
     // Show success message
-    setSuccessMessage('Product created successfully');
-    setTimeout(() => setSuccessMessage(null), 3000);
+    showOperationSuccess('create', newProduct.name);
     
     // Call the callback if provided
     onProductCreated?.(newProduct);
-  }, [onProductCreated]);
+  }, [onProductCreated, showOperationSuccess]);
 
   // Handle optimistic product update
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleOptimisticUpdate = useCallback((updatedProduct: Product) => {
     // Store original products for potential revert
     const originalProducts = [...products];
@@ -189,17 +189,15 @@ export function ProductDashboard({ className, onProductCreated, onProductUpdated
     setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p));
     
     // Show success message
-    setSuccessMessage('Product updated successfully');
-    setTimeout(() => setSuccessMessage(null), 3000);
+    showOperationSuccess('update', updatedProduct.name);
     
     // Call the callback if provided
     onProductUpdated?.(updatedProduct);
     
     return originalProducts; // Return for potential revert
-  }, [products, onProductUpdated]);
+  }, [products, onProductUpdated, showOperationSuccess]);
 
   // Revert optimistic update (can be called from parent components)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const revertOptimisticUpdate = useCallback((originalProducts: Product[]) => {
     setProducts(originalProducts);
   }, []);
@@ -250,6 +248,14 @@ export function ProductDashboard({ className, onProductCreated, onProductUpdated
     loadProducts();
   }, [sortBy, sortOrder, loadProducts]);
 
+  // Expose methods for parent components (if needed)
+  // This is commented out as it's not currently used
+  // React.useImperativeHandle(React.useRef(), () => ({
+  //   handleOptimisticCreate,
+  //   handleOptimisticUpdate,
+  //   revertOptimisticUpdate,
+  // }));
+
   // Render loading state
   if (loading && !isRefreshing) {
     return <PageLoadingSpinner message="Loading products..." />;
@@ -265,14 +271,14 @@ export function ProductDashboard({ className, onProductCreated, onProductUpdated
   }
 
   return (
-    <div className={`product-dashboard ${className || ''}`}>
+    <div className={`container mx-auto px-4 py-8 ${className || ''}`}>
       {/* Header */}
-      <div className="dashboard-header">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="page-title">Product Management</h1>
-          <p className="page-subtitle">Manage your product inventory and catalog</p>
+          <h1 className="text-3xl font-bold tracking-tight">Product Management</h1>
+          <p className="text-muted-foreground mt-2">Manage your product inventory and catalog</p>
         </div>
-        <div className="dashboard-actions">
+        <div className="flex flex-col sm:flex-row gap-3">
           <Button
             variant="outline"
             onClick={() => loadProducts(true)}
@@ -435,36 +441,6 @@ export function ProductDashboard({ className, onProductCreated, onProductUpdated
         </CardContent>
       </Card>
 
-      {/* Success Message */}
-      {successMessage && (
-        <div className="mb-6">
-          <div className="success-message">
-            <svg
-              className="w-5 h-5 text-green-600 shrink-0"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            <span className="font-medium">{successMessage}</span>
-            <button
-              onClick={() => setSuccessMessage(null)}
-              className="ml-auto hover:bg-green-100 rounded-full p-1"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Error Message */}
       {error && (
         <div className="mb-6">
@@ -536,7 +512,7 @@ export function ProductDashboard({ className, onProductCreated, onProductUpdated
             </div>
           </Card>
         ) : (
-          <div className="product-grid">
+          <div className="grid gap-4 sm:gap-6" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
             {products.map((product) => (
               <div key={product.id} className="relative">
                 <ProductCard
@@ -546,7 +522,7 @@ export function ProductDashboard({ className, onProductCreated, onProductUpdated
                 />
                 {/* Operation in progress overlay */}
                 {operationsInProgress.has(`delete-${product.id}`) && (
-                  <div className="loading-overlay">
+                  <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center rounded-lg">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <LoadingSpinner size="sm" />
                       Deleting...
