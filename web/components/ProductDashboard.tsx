@@ -7,7 +7,7 @@ import { Product, ProductQueryParams } from '@/app/types';
 import { apiClient } from '@/lib/api-client';
 import { useDataConsistency, useDataRefresh } from '@/hooks/use-data-consistency';
 import { ProductCard } from './ProductCard';
-import { LoadingSpinner, PageLoadingSpinner, ProductGridSkeleton, LoadingOverlay } from './LoadingSpinner';
+import { LoadingSpinner, ProductGridSkeleton } from './LoadingSpinner';
 import { ErrorMessage, NetworkErrorMessage } from './ErrorMessage';
 import { DeleteConfirmationDialog } from './DeleteConfirmationDialog';
 import { useApiErrorHandler } from '@/app/contexts/ErrorContext';

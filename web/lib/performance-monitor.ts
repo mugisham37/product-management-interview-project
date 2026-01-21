@@ -8,7 +8,7 @@ interface PerformanceMetric {
   startTime: number;
   endTime?: number;
   duration?: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 interface ApiCallMetric extends PerformanceMetric {
@@ -26,7 +26,7 @@ class PerformanceMonitor {
   /**
    * Start tracking a performance metric
    */
-  startMetric(name: string, metadata?: Record<string, any>): void {
+  startMetric(name: string, metadata?: Record<string, unknown>): void {
     this.metrics.set(name, {
       name,
       startTime: performance.now(),
@@ -145,7 +145,7 @@ class PerformanceMonitor {
   /**
    * Track component render time
    */
-  trackComponentRender(componentName: string, renderFn: () => any): any {
+  trackComponentRender<T>(componentName: string, renderFn: () => T): T {
     const startTime = performance.now();
     const result = renderFn();
     const endTime = performance.now();
@@ -157,7 +157,7 @@ class PerformanceMonitor {
   /**
    * Track user interaction
    */
-  trackUserInteraction(action: string, metadata?: Record<string, any>): void {
+  trackUserInteraction(action: string, metadata?: Record<string, unknown>): void {
     this.startMetric(`USER_${action}`, metadata);
     
     // Auto-end after a reasonable timeout
@@ -182,8 +182,9 @@ class PerformanceMonitor {
     // First Input Delay
     new PerformanceObserver((entryList) => {
       const entries = entryList.getEntries();
-      entries.forEach((entry: any) => {
-        console.log('FID:', entry.processingStart - entry.startTime);
+      entries.forEach((entry) => {
+        const fidEntry = entry as PerformanceEventTiming;
+        console.log('FID:', fidEntry.processingStart - fidEntry.startTime);
       });
     }).observe({ entryTypes: ['first-input'] });
 
@@ -191,9 +192,10 @@ class PerformanceMonitor {
     new PerformanceObserver((entryList) => {
       let clsValue = 0;
       const entries = entryList.getEntries();
-      entries.forEach((entry: any) => {
-        if (!entry.hadRecentInput) {
-          clsValue += entry.value;
+      entries.forEach((entry) => {
+        const clsEntry = entry as PerformanceEntry & { hadRecentInput?: boolean; value?: number };
+        if (clsEntry && !clsEntry.hadRecentInput) {
+          clsValue += (clsEntry.value ?? 0);
         }
       });
       console.log('CLS:', clsValue);
@@ -214,7 +216,7 @@ export const trackApiCall = (method: string, url: string, startTime: number, end
   performanceMonitor.trackApiCall(method, url, startTime, endTime, status, cacheHit);
 };
 
-export const trackUserInteraction = (action: string, metadata?: Record<string, any>) => {
+export const trackUserInteraction = (action: string, metadata?: Record<string, unknown>) => {
   performanceMonitor.trackUserInteraction(action, metadata);
 };
 

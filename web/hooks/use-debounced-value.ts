@@ -24,7 +24,7 @@ export function useDebouncedValue<T>(value: T, delay: number): T {
  * Custom hook for debounced callbacks
  * Useful for optimizing expensive operations
  */
-export function useDebouncedCallback<T extends (...args: any[]) => any>(
+export function useDebouncedCallback<T extends (...args: unknown[]) => unknown>(
   callback: T,
   delay: number
 ): T {

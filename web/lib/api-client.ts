@@ -13,6 +13,18 @@ import {
 import { trackApiCall } from './performance-monitor';
 
 /**
+ * Extend Axios config type to support custom metadata
+ */
+declare module 'axios' {
+  interface InternalAxiosRequestConfig {
+    metadata?: {
+      startTime: number;
+      cacheHit: boolean;
+    };
+  }
+}
+
+/**
  * API Client for Product Management System
  * Handles all HTTP communication with the backend server
  * Optimized for performance with caching and request deduplication
@@ -20,8 +32,8 @@ import { trackApiCall } from './performance-monitor';
 class ApiClient {
   private client: AxiosInstance;
   private baseURL: string;
-  private cache: Map<string, { data: any; timestamp: number; ttl: number }>;
-  private pendingRequests: Map<string, Promise<any>>;
+  private cache: Map<string, { data: unknown; timestamp: number; ttl: number }>;
+  private pendingRequests: Map<string, Promise<unknown>>;
   private readonly DEFAULT_CACHE_TTL = 30000; // 30 seconds
 
   constructor() {
@@ -44,7 +56,7 @@ class ApiClient {
   /**
    * Generate cache key for request
    */
-  private getCacheKey(url: string, params?: any): string {
+  private getCacheKey(url: string, params?: unknown): string {
     const paramString = params ? JSON.stringify(params) : '';
     return `${url}${paramString}`;
   }
@@ -52,17 +64,17 @@ class ApiClient {
   /**
    * Check if cached data is still valid
    */
-  private isCacheValid(cacheEntry: { data: any; timestamp: number; ttl: number }): boolean {
+  private isCacheValid(cacheEntry: { data: unknown; timestamp: number; ttl: number }): boolean {
     return Date.now() - cacheEntry.timestamp < cacheEntry.ttl;
   }
 
   /**
    * Get data from cache if valid
    */
-  private getFromCache(key: string): any | null {
+  private getFromCache<T>(key: string): T | null {
     const cacheEntry = this.cache.get(key);
     if (cacheEntry && this.isCacheValid(cacheEntry)) {
-      return cacheEntry.data;
+      return cacheEntry.data as T;
     }
     if (cacheEntry) {
       this.cache.delete(key); // Remove expired entry
@@ -73,7 +85,7 @@ class ApiClient {
   /**
    * Store data in cache
    */
-  private setCache(key: string, data: any, ttl: number = this.DEFAULT_CACHE_TTL): void {
+  private setCache(key: string, data: unknown, ttl: number = this.DEFAULT_CACHE_TTL): void {
     this.cache.set(key, {
       data,
       timestamp: Date.now(),
@@ -282,7 +294,7 @@ class ApiClient {
     const cacheKey = this.getCacheKey('/products', params);
     
     // Check cache first
-    const cachedData = this.getFromCache(cacheKey);
+    const cachedData = this.getFromCache<Product[]>(cacheKey);
     if (cachedData) {
       // Track cache hit for performance monitoring
       trackApiCall('GET', '/products', performance.now(), performance.now(), 200, true);
@@ -327,7 +339,7 @@ class ApiClient {
     const cacheKey = this.getCacheKey(`/products/${id}`);
     
     // Check cache first
-    const cachedData = this.getFromCache(cacheKey);
+    const cachedData = this.getFromCache<Product>(cacheKey);
     if (cachedData) {
       return cachedData;
     }
@@ -453,7 +465,7 @@ class ApiClient {
     const cacheKey = this.getCacheKey('/products/categories');
     
     // Check cache first - categories change less frequently
-    const cachedData = this.getFromCache(cacheKey);
+    const cachedData = this.getFromCache<string[]>(cacheKey);
     if (cachedData) {
       return cachedData;
     }
