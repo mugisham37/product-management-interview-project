@@ -7,6 +7,7 @@ import { Product, CreateProductRequest, UpdateProductRequest } from '@/app/types
 import { apiClient } from '@/lib/api-client';
 import { LoadingSpinner } from './LoadingSpinner';
 import { ErrorMessage } from './ErrorMessage';
+import { PageHeader } from './PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -269,18 +270,16 @@ export function ProductForm({
 
   return (
     <div className={`container mx-auto px-4 py-8 ${className || ''}`}>
-      <Card className="max-w-2xl mx-auto">
-        <CardHeader>
-          <CardTitle className="text-2xl">
-            {mode === 'create' ? 'Add New Product' : 'Edit Product'}
-          </CardTitle>
-          <p className="text-muted-foreground">
-            {mode === 'create' 
-              ? 'Fill in the details below to add a new product to your inventory.'
-              : 'Update the product information below.'}
-          </p>
-        </CardHeader>
+      {/* Page Header */}
+      <PageHeader
+        title={mode === 'create' ? 'Add New Product' : 'Edit Product'}
+        description={mode === 'create' 
+          ? 'Fill in the details below to add a new product to your inventory.'
+          : 'Update the product information below.'}
+        className="mb-8"
+      />
 
+      <Card className="max-w-2xl mx-auto">
         <CardContent>
           {/* Success Message */}
           {successMessage && (

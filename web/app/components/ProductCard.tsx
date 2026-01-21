@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Product } from '@/app/types/product';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -41,9 +42,11 @@ export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
     <Card className="product-card h-full flex flex-col">
       <CardHeader className="pb-4">
         <div className="flex justify-between items-start">
-          <CardTitle className="text-lg font-semibold line-clamp-2">
-            {product.name}
-          </CardTitle>
+          <Link href={`/products/${product.id}`} className="flex-1">
+            <CardTitle className="text-lg font-semibold line-clamp-2 hover:text-primary transition-colors cursor-pointer">
+              {product.name}
+            </CardTitle>
+          </Link>
           <Badge variant={stockStatus.variant} className="ml-2 shrink-0">
             {stockStatus.label}
           </Badge>
@@ -52,33 +55,35 @@ export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
 
       <CardContent className="flex-1 space-y-4">
         {/* Product Image */}
-        <div className="relative w-full h-48 bg-muted rounded-md overflow-hidden">
-          {product.imageUrl ? (
-            <Image
-              src={product.imageUrl}
-              alt={product.name}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            />
-          ) : (
-            <div className="flex items-center justify-center h-full text-muted-foreground">
-              <svg
-                className="w-12 h-12"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
-            </div>
-          )}
-        </div>
+        <Link href={`/products/${product.id}`}>
+          <div className="relative w-full h-48 bg-muted rounded-md overflow-hidden cursor-pointer hover:opacity-90 transition-opacity">
+            {product.imageUrl ? (
+              <Image
+                src={product.imageUrl}
+                alt={product.name}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-muted-foreground">
+                <svg
+                  className="w-12 h-12"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+              </div>
+            )}
+          </div>
+        </Link>
 
         {/* Product Details */}
         <div className="space-y-3">
@@ -145,6 +150,30 @@ export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
 
       <CardFooter className="pt-4 border-t">
         <div className="flex gap-2 w-full">
+          <Link href={`/products/${product.id}`} className="flex-1">
+            <Button variant="outline" size="sm" className="w-full">
+              <svg
+                className="w-4 h-4 mr-1"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                />
+              </svg>
+              View
+            </Button>
+          </Link>
           <Button
             variant="outline"
             size="sm"
