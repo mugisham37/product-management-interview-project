@@ -44,8 +44,8 @@ This implementation plan follows a phased approach: complete backend development
     - **Property 3: Input Validation Error Handling**
     - **Validates: Requirements 4.6, 8.5, 8.6, 10.4**
 
-- [ ] 4. Implement backend service layer
-  - [ ] 4.1 Create ProductsService with CRUD operations
+- [x] 4. Implement backend service layer
+  - [x] 4.1 Create ProductsService with CRUD operations
     - Implement findAll, findOne, create, update, and remove methods
     - Add proper error handling for not found cases
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
@@ -55,8 +55,8 @@ This implementation plan follows a phased approach: complete backend development
     - Test error handling for edge cases
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
 
-- [ ] 5. Implement backend controller and API endpoints
-  - [ ] 5.1 Create ProductsController with RESTful endpoints
+- [-] 5. Implement backend controller and API endpoints
+  - [x] 5.1 Create ProductsController with RESTful endpoints
     - Implement GET /products, GET /products/:id, POST /products, PUT /products/:id, DELETE /products/:id
     - Configure consistent API response format
     - Add proper HTTP status codes and error handling
