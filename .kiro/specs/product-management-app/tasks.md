@@ -29,13 +29,13 @@ This implementation plan follows a phased approach: complete backend development
     - Include proper constraints and indexes
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8_
 
-- [ ] 3. Implement backend DTOs and validation
-  - [ ] 3.1 Create CreateProductDto with class-validator decorators
+- [x] 3. Implement backend DTOs and validation
+  - [x] 3.1 Create CreateProductDto with class-validator decorators
     - Define validation rules for all product fields
     - Configure proper data transformation
     - _Requirements: 1.4, 1.5, 10.1, 10.2_
 
-  - [ ] 3.2 Create UpdateProductDto extending CreateProductDto
+  - [x] 3.2 Create UpdateProductDto extending CreateProductDto
     - Make all fields optional for partial updates
     - Maintain validation rules
     - _Requirements: 1.4, 1.5, 10.1, 10.2_
