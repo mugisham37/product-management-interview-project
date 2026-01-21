@@ -10,17 +10,24 @@ import {
   ApiError,
   NetworkError,
 } from '@/app/types';
+import { trackApiCall } from './performance-monitor';
 
 /**
  * API Client for Product Management System
  * Handles all HTTP communication with the backend server
+ * Optimized for performance with caching and request deduplication
  */
 class ApiClient {
   private client: AxiosInstance;
   private baseURL: string;
+  private cache: Map<string, { data: any; timestamp: number; ttl: number }>;
+  private pendingRequests: Map<string, Promise<any>>;
+  private readonly DEFAULT_CACHE_TTL = 30000; // 30 seconds
 
   constructor() {
     this.baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    this.cache = new Map();
+    this.pendingRequests = new Map();
     
     this.client = axios.create({
       baseURL: this.baseURL,
@@ -35,18 +42,89 @@ class ApiClient {
   }
 
   /**
+   * Generate cache key for request
+   */
+  private getCacheKey(url: string, params?: any): string {
+    const paramString = params ? JSON.stringify(params) : '';
+    return `${url}${paramString}`;
+  }
+
+  /**
+   * Check if cached data is still valid
+   */
+  private isCacheValid(cacheEntry: { data: any; timestamp: number; ttl: number }): boolean {
+    return Date.now() - cacheEntry.timestamp < cacheEntry.ttl;
+  }
+
+  /**
+   * Get data from cache if valid
+   */
+  private getFromCache(key: string): any | null {
+    const cacheEntry = this.cache.get(key);
+    if (cacheEntry && this.isCacheValid(cacheEntry)) {
+      return cacheEntry.data;
+    }
+    if (cacheEntry) {
+      this.cache.delete(key); // Remove expired entry
+    }
+    return null;
+  }
+
+  /**
+   * Store data in cache
+   */
+  private setCache(key: string, data: any, ttl: number = this.DEFAULT_CACHE_TTL): void {
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now(),
+      ttl
+    });
+  }
+
+  /**
+   * Clear cache entries matching pattern
+   */
+  private clearCachePattern(pattern: string): void {
+    for (const key of this.cache.keys()) {
+      if (key.includes(pattern)) {
+        this.cache.delete(key);
+      }
+    }
+  }
+
+  /**
+   * Deduplicate concurrent requests
+   */
+  private async deduplicateRequest<T>(key: string, requestFn: () => Promise<T>): Promise<T> {
+    if (this.pendingRequests.has(key)) {
+      return this.pendingRequests.get(key) as Promise<T>;
+    }
+
+    const promise = requestFn().finally(() => {
+      this.pendingRequests.delete(key);
+    });
+
+    this.pendingRequests.set(key, promise);
+    return promise;
+  }
+
+  /**
    * Set up request and response interceptors for centralized error handling
    */
   private setupInterceptors(): void {
-    // Request interceptor
+    // Request interceptor - optimized for performance with tracking
     this.client.interceptors.request.use(
       (config) => {
-        // Add timestamp to prevent caching issues
-        if (config.method === 'get') {
-          config.params = {
-            ...config.params,
-            _t: Date.now(),
-          };
+        // Add performance tracking metadata
+        config.metadata = {
+          startTime: performance.now(),
+          cacheHit: false
+        };
+        
+        // Only add cache-busting for non-GET requests or when explicitly needed
+        if (config.method !== 'get' && config.headers?.['Cache-Control'] !== 'no-cache') {
+          // Allow browser caching for GET requests to improve performance
+          delete config.params?._t;
         }
         return config;
       },
@@ -55,12 +133,36 @@ class ApiClient {
       }
     );
 
-    // Response interceptor
+    // Response interceptor with performance tracking
     this.client.interceptors.response.use(
       (response: AxiosResponse) => {
+        // Track successful API calls
+        const config = response.config;
+        if (config.metadata?.startTime) {
+          trackApiCall(
+            config.method?.toUpperCase() || 'GET',
+            config.url || '',
+            config.metadata.startTime,
+            performance.now(),
+            response.status,
+            config.metadata.cacheHit
+          );
+        }
         return response;
       },
       (error: AxiosError) => {
+        // Track failed API calls
+        const config = error.config;
+        if (config?.metadata?.startTime) {
+          trackApiCall(
+            config.method?.toUpperCase() || 'GET',
+            config.url || '',
+            config.metadata.startTime,
+            performance.now(),
+            error.response?.status,
+            false
+          );
+        }
         return Promise.reject(this.handleError(error));
       }
     );
@@ -174,17 +276,34 @@ class ApiClient {
   // ==================== PRODUCT API METHODS ====================
 
   /**
-   * Get all products with optional query parameters
+   * Get all products with optional query parameters (cached)
    */
   public async getProducts(params?: ProductQueryParams): Promise<Product[]> {
-    try {
-      const response = await this.client.get<ApiResponse<Product[]>>('/products', {
-        params,
-      });
-      return response.data.data;
-    } catch (error) {
-      throw error;
+    const cacheKey = this.getCacheKey('/products', params);
+    
+    // Check cache first
+    const cachedData = this.getFromCache(cacheKey);
+    if (cachedData) {
+      // Track cache hit for performance monitoring
+      trackApiCall('GET', '/products', performance.now(), performance.now(), 200, true);
+      return cachedData;
     }
+
+    // Deduplicate concurrent requests
+    return this.deduplicateRequest(cacheKey, async () => {
+      try {
+        const response = await this.client.get<ApiResponse<Product[]>>('/products', {
+          params,
+        });
+        const data = response.data.data;
+        
+        // Cache the result
+        this.setCache(cacheKey, data);
+        return data;
+      } catch (error) {
+        throw error;
+      }
+    });
   }
 
   /**
@@ -202,47 +321,77 @@ class ApiClient {
   }
 
   /**
-   * Get a single product by ID
+   * Get a single product by ID (cached)
    */
   public async getProduct(id: string): Promise<Product> {
-    try {
-      const response = await this.client.get<ApiResponse<Product>>(`/products/${id}`);
-      return response.data.data;
-    } catch (error) {
-      throw error;
+    const cacheKey = this.getCacheKey(`/products/${id}`);
+    
+    // Check cache first
+    const cachedData = this.getFromCache(cacheKey);
+    if (cachedData) {
+      return cachedData;
     }
+
+    // Deduplicate concurrent requests
+    return this.deduplicateRequest(cacheKey, async () => {
+      try {
+        const response = await this.client.get<ApiResponse<Product>>(`/products/${id}`);
+        const data = response.data.data;
+        
+        // Cache the result with longer TTL for individual products
+        this.setCache(cacheKey, data, 60000); // 1 minute
+        return data;
+      } catch (error) {
+        throw error;
+      }
+    });
   }
 
   /**
-   * Create a new product
+   * Create a new product (invalidates cache)
    */
   public async createProduct(productData: CreateProductRequest): Promise<Product> {
     try {
       const response = await this.client.post<ApiResponse<Product>>('/products', productData);
-      return response.data.data;
+      const data = response.data.data;
+      
+      // Invalidate products list cache
+      this.clearCachePattern('/products');
+      
+      return data;
     } catch (error) {
       throw error;
     }
   }
 
   /**
-   * Update an existing product
+   * Update an existing product (invalidates cache)
    */
   public async updateProduct(id: string, productData: UpdateProductRequest): Promise<Product> {
     try {
       const response = await this.client.put<ApiResponse<Product>>(`/products/${id}`, productData);
-      return response.data.data;
+      const data = response.data.data;
+      
+      // Invalidate related cache entries
+      this.clearCachePattern('/products');
+      this.cache.delete(this.getCacheKey(`/products/${id}`));
+      
+      return data;
     } catch (error) {
       throw error;
     }
   }
 
   /**
-   * Delete a product by ID
+   * Delete a product by ID (invalidates cache)
    */
   public async deleteProduct(id: string): Promise<void> {
     try {
       await this.client.delete<ApiResponse<null>>(`/products/${id}`);
+      
+      // Invalidate related cache entries
+      this.clearCachePattern('/products');
+      this.cache.delete(this.getCacheKey(`/products/${id}`));
     } catch (error) {
       throw error;
     }
@@ -298,15 +447,47 @@ class ApiClient {
   }
 
   /**
-   * Get all product categories
+   * Get all product categories (cached with longer TTL)
    */
   public async getCategories(): Promise<string[]> {
-    try {
-      const response = await this.client.get<ApiResponse<string[]>>('/products/categories');
-      return response.data.data;
-    } catch (error) {
-      throw error;
+    const cacheKey = this.getCacheKey('/products/categories');
+    
+    // Check cache first - categories change less frequently
+    const cachedData = this.getFromCache(cacheKey);
+    if (cachedData) {
+      return cachedData;
     }
+
+    return this.deduplicateRequest(cacheKey, async () => {
+      try {
+        const response = await this.client.get<ApiResponse<string[]>>('/products/categories');
+        const data = response.data.data;
+        
+        // Cache categories for longer (5 minutes)
+        this.setCache(cacheKey, data, 300000);
+        return data;
+      } catch (error) {
+        throw error;
+      }
+    });
+  }
+
+  /**
+   * Clear all cache entries
+   */
+  public clearCache(): void {
+    this.cache.clear();
+    this.pendingRequests.clear();
+  }
+
+  /**
+   * Get cache statistics for debugging
+   */
+  public getCacheStats(): { size: number; keys: string[] } {
+    return {
+      size: this.cache.size,
+      keys: Array.from(this.cache.keys())
+    };
   }
 
   /**
@@ -329,6 +510,93 @@ class ApiClient {
   public async getLowStockProducts(): Promise<Product[]> {
     try {
       const response = await this.client.get<ApiResponse<Product[]>>('/products/low-stock');
+      return response.data.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // ==================== DATA CONSISTENCY METHODS ====================
+
+  /**
+   * Get product with version information for conflict detection
+   */
+  public async getProductWithVersion(id: string): Promise<Product> {
+    try {
+      const response = await this.client.get<ApiResponse<Product>>(`/products/${id}/version`);
+      return response.data.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Update product with version checking for conflict detection
+   */
+  public async updateProductWithVersionCheck(
+    id: string, 
+    productData: UpdateProductRequest
+  ): Promise<Product> {
+    try {
+      const response = await this.client.put<ApiResponse<Product>>(
+        `/products/${id}/versioned`, 
+        productData
+      );
+      return response.data.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Check overall data consistency
+   */
+  public async checkDataConsistency(): Promise<{
+    totalProducts: number;
+    lastModified: Date | null;
+    checksum: string;
+  }> {
+    try {
+      const response = await this.client.post<ApiResponse<{
+        totalProducts: number;
+        lastModified: Date | null;
+        checksum: string;
+      }>>('/products/consistency-check');
+      return response.data.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Detect conflicts between client and server data
+   */
+  public async detectConflicts(clientProducts: Partial<Product>[]): Promise<Product[]> {
+    try {
+      const response = await this.client.post<ApiResponse<Product[]>>(
+        '/products/detect-conflicts',
+        clientProducts
+      );
+      return response.data.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Bulk update products with conflict detection
+   */
+  public async bulkUpdateWithConflictDetection(
+    updates: UpdateProductRequest[]
+  ): Promise<{
+    updated: Product[];
+    conflicts: Product[];
+  }> {
+    try {
+      const response = await this.client.patch<ApiResponse<{
+        updated: Product[];
+        conflicts: Product[];
+      }>>('/products/bulk-update', updates);
       return response.data.data;
     } catch (error) {
       throw error;

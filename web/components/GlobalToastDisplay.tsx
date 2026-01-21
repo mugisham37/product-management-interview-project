@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useToast } from '@/app/contexts/ToastContext';
-import { ToastContainer } from '@/app/components/Toast';
+import { ToastContainer } from '@/components/Toast';
 
 /**
  * Global Toast Display Component

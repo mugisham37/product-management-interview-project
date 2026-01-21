@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useReducer, ReactNode, useCallback } from 'react';
-import { Toast } from '@/app/components/Toast';
+import { Toast } from '@/components/Toast';
 
 // Toast state
 interface ToastState {

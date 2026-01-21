@@ -37,6 +37,7 @@ describe('ProductsService', () => {
     notes: 'Test notes',
     createdAt: new Date(),
     updatedAt: new Date(),
+    version: 1,
   };
 
   beforeEach(async () => {

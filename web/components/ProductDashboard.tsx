@@ -5,8 +5,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Product, ProductQueryParams } from '@/app/types';
 import { apiClient } from '@/lib/api-client';
+import { useDataConsistency, useDataRefresh } from '@/hooks/use-data-consistency';
 import { ProductCard } from './ProductCard';
-import { LoadingSpinner, PageLoadingSpinner } from './LoadingSpinner';
+import { LoadingSpinner, PageLoadingSpinner, ProductGridSkeleton, LoadingOverlay } from './LoadingSpinner';
 import { ErrorMessage, NetworkErrorMessage } from './ErrorMessage';
 import { DeleteConfirmationDialog } from './DeleteConfirmationDialog';
 import { useApiErrorHandler } from '@/app/contexts/ErrorContext';
@@ -16,14 +17,13 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface ProductDashboardProps {
   className?: string;
-  onProductCreated?: (product: Product) => void;
-  onProductUpdated?: (product: Product) => void;
 }
 
-export function ProductDashboard({ className, onProductCreated, onProductUpdated }: ProductDashboardProps) {
+export function ProductDashboard({ className }: ProductDashboardProps) {
   const router = useRouter();
   const handleApiError = useApiErrorHandler();
   const { showOperationSuccess } = useSuccessFeedback();
@@ -44,6 +44,15 @@ export function ProductDashboard({ className, onProductCreated, onProductUpdated
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeletingProduct, setIsDeletingProduct] = useState(false);
+
+  // Data consistency hooks
+  const [consistencyState, consistencyActions] = useDataConsistency({
+    enableAutoRefresh: true,
+    refreshInterval: 30000, // 30 seconds
+    conflictResolutionStrategy: 'server-wins',
+  });
+
+  const { isRefreshing: isDataRefreshing, refresh: refreshWithConflictCheck } = useDataRefresh(products);
 
   // Load products with current filters
   const loadProducts = useCallback(async (showRefreshIndicator = false) => {
@@ -70,6 +79,14 @@ export function ProductDashboard({ className, onProductCreated, onProductUpdated
 
       const data = await apiClient.getProducts(queryParams);
       setProducts(data);
+      
+      // Create snapshot for consistency checking
+      consistencyActions.createSnapshot(data);
+      
+      // Check for conflicts if we have existing data
+      if (products.length > 0 && !showRefreshIndicator) {
+        await consistencyActions.checkConsistency(data);
+      }
     } catch (err: unknown) {
       handleApiError(err, 'loading products');
       const error = err as { isNetworkError?: boolean; message?: string };
@@ -82,7 +99,7 @@ export function ProductDashboard({ className, onProductCreated, onProductUpdated
       setLoading(false);
       setIsRefreshing(false);
     }
-  }, [searchQuery, selectedCategory, sortBy, sortOrder, handleApiError]);
+  }, [searchQuery, selectedCategory, sortBy, sortOrder, handleApiError, products, consistencyActions]);
 
   // Load categories
   const loadCategories = useCallback(async () => {
@@ -168,39 +185,28 @@ export function ProductDashboard({ className, onProductCreated, onProductUpdated
     }
   }, [isDeletingProduct]);
 
-  // Handle optimistic product creation
-  const handleOptimisticCreate = useCallback((newProduct: Product) => {
-    // Optimistically add the new product to the beginning of the list
-    setProducts(prev => [newProduct, ...prev]);
-    
-    // Show success message
-    showOperationSuccess('create', newProduct.name);
-    
-    // Call the callback if provided
-    onProductCreated?.(newProduct);
-  }, [onProductCreated, showOperationSuccess]);
+  // Handle data refresh with conflict detection
+  const handleRefreshWithConflictDetection = useCallback(async () => {
+    try {
+      const refreshedProducts = await refreshWithConflictCheck();
+      setProducts(refreshedProducts);
+      consistencyActions.createSnapshot(refreshedProducts);
+    } catch (error) {
+      handleApiError(error, 'refreshing data');
+    }
+  }, [refreshWithConflictCheck, consistencyActions, handleApiError]);
 
-  // Handle optimistic product update
-  const handleOptimisticUpdate = useCallback((updatedProduct: Product) => {
-    // Store original products for potential revert
-    const originalProducts = [...products];
-    
-    // Optimistically update the product in the list
-    setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p));
-    
-    // Show success message
-    showOperationSuccess('update', updatedProduct.name);
-    
-    // Call the callback if provided
-    onProductUpdated?.(updatedProduct);
-    
-    return originalProducts; // Return for potential revert
-  }, [products, onProductUpdated, showOperationSuccess]);
-
-  // Revert optimistic update (can be called from parent components)
-  const revertOptimisticUpdate = useCallback((originalProducts: Product[]) => {
-    setProducts(originalProducts);
-  }, []);
+  // Handle conflict resolution
+  const handleConflictResolution = useCallback(async () => {
+    try {
+      const resolvedProducts = await consistencyActions.resolveConflicts(products);
+      setProducts(resolvedProducts);
+      consistencyActions.createSnapshot(resolvedProducts);
+      showOperationSuccess('resolve', 'conflicts');
+    } catch (error) {
+      handleApiError(error, 'resolving conflicts');
+    }
+  }, [consistencyActions, products, showOperationSuccess, handleApiError]);
 
   // Handle search input changes with debouncing
   const handleSearchChange = useCallback((value: string) => {
@@ -256,9 +262,27 @@ export function ProductDashboard({ className, onProductCreated, onProductUpdated
   //   revertOptimisticUpdate,
   // }));
 
-  // Render loading state
+  // Render loading state with skeleton
   if (loading && !isRefreshing) {
-    return <PageLoadingSpinner message="Loading products..." />;
+    return (
+      <div className={`container mx-auto px-4 py-8 ${className || ''}`}>
+        {/* Header skeleton */}
+        <div className="mb-8 space-y-4">
+          <div className="flex justify-between items-center">
+            <div className="h-8 bg-muted rounded w-48 animate-pulse" />
+            <div className="h-10 w-32 bg-muted rounded animate-pulse" />
+          </div>
+          <div className="flex gap-4">
+            <div className="h-10 flex-1 bg-muted rounded animate-pulse" />
+            <div className="h-10 w-40 bg-muted rounded animate-pulse" />
+            <div className="h-10 w-32 bg-muted rounded animate-pulse" />
+          </div>
+        </div>
+        
+        {/* Product grid skeleton */}
+        <ProductGridSkeleton count={6} />
+      </div>
+    );
   }
 
   // Render network error state
@@ -450,6 +474,73 @@ export function ProductDashboard({ className, onProductCreated, onProductUpdated
             retryText="Dismiss"
             variant="banner"
           />
+        </div>
+      )}
+
+      {/* Data Consistency Alerts */}
+      {consistencyState.conflicts.length > 0 && (
+        <div className="mb-6">
+          <Alert className="border-yellow-200 bg-yellow-50">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+            <AlertDescription className="ml-2">
+              <div className="flex items-center justify-between">
+                <span>
+                  Data conflicts detected ({consistencyState.conflicts.length} product{consistencyState.conflicts.length === 1 ? '' : 's'}). 
+                  Some products may have been modified by other users.
+                </span>
+                <div className="flex gap-2 ml-4">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleRefreshWithConflictDetection}
+                    disabled={isDataRefreshing}
+                  >
+                    {isDataRefreshing ? (
+                      <>
+                        <LoadingSpinner size="sm" className="mr-1" />
+                        Refreshing...
+                      </>
+                    ) : (
+                      'Refresh Data'
+                    )}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleConflictResolution}
+                  >
+                    Resolve Conflicts
+                  </Button>
+                </div>
+              </div>
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
+
+      {/* Consistency Check Status */}
+      {consistencyState.lastCheck && (
+        <div className="mb-4">
+          <div className="text-xs text-muted-foreground flex items-center gap-2">
+            <span>Last consistency check: {consistencyState.lastCheck.toLocaleTimeString()}</span>
+            {consistencyState.isConsistent ? (
+              <Badge variant="secondary" className="text-xs">
+                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Synchronized
+              </Badge>
+            ) : (
+              <Badge variant="destructive" className="text-xs">
+                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01" />
+                </svg>
+                Conflicts
+              </Badge>
+            )}
+          </div>
         </div>
       )}
 

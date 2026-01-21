@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ProductForm } from '@/app/components/ProductForm';
+import { ProductForm } from '@/components/ProductForm';
 
 export default function NewProductPage() {
   return (

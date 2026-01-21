@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { Product } from '@/app/types/product';
 import {
   Dialog,
@@ -97,9 +98,11 @@ export function DeleteConfirmationDialog({
                 </div>
                 {product.imageUrl && (
                   <div className="w-12 h-12 bg-background rounded border overflow-hidden shrink-0">
-                    <img
+                    <Image
                       src={product.imageUrl}
                       alt={product.name}
+                      width={48}
+                      height={48}
                       className="w-full h-full object-cover"
                     />
                   </div>

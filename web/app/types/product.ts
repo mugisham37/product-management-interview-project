@@ -21,6 +21,7 @@ export interface Product {
   notes?: string;
   createdAt: string;
   updatedAt: string;
+  version: number;
 }
 
 export interface CreateProductRequest {
@@ -47,6 +48,8 @@ export interface CreateProductRequest {
 
 export interface UpdateProductRequest extends Partial<CreateProductRequest> {
   id?: string;
+  version?: number;
+  lastModified?: number;
 }
 
 export interface ProductQueryParams {

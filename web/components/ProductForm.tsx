@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { Product, CreateProductRequest, UpdateProductRequest } from '@/app/types/product';
 import { apiClient } from '@/lib/api-client';
-import { LoadingSpinner } from './LoadingSpinner';
+import { LoadingSpinner, FormSkeleton, LoadingOverlay } from './LoadingSpinner';
 import { ErrorMessage } from './ErrorMessage';
 import { useApiErrorHandler } from '@/app/contexts/ErrorContext';
 import { useSuccessFeedback } from '@/app/contexts/ToastContext';
