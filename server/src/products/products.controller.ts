@@ -36,6 +36,15 @@ export class ProductsController {
     };
   }
 
+  @Get('categories')
+  async getCategories(): Promise<ApiResponse<string[]>> {
+    const categories = await this.productsService.getCategories();
+    return {
+      success: true,
+      data: categories,
+    };
+  }
+
   @Get(':id')
   async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<ApiResponse<Product>> {
     const product = await this.productsService.findOne(id);

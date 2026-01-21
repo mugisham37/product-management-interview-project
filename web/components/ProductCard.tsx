@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Product } from '@/app/types/product';
@@ -15,6 +15,7 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
+  const [imageError, setImageError] = useState(false);
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -57,13 +58,15 @@ export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
         {/* Product Image */}
         <Link href={`/products/${product.id}`}>
           <div className="relative w-full h-40 sm:h-48 bg-muted rounded-md overflow-hidden cursor-pointer hover:opacity-90 transition-opacity">
-            {product.imageUrl ? (
+            {product.imageUrl && !imageError ? (
               <Image
                 src={product.imageUrl}
                 alt={product.name}
                 fill
                 className="object-cover"
                 sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                onError={() => setImageError(true)}
+                unoptimized
               />
             ) : (
               <div className="flex items-center justify-center h-full text-muted-foreground">

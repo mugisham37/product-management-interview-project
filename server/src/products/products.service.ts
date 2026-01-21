@@ -273,4 +273,22 @@ export class ProductsService {
     const product = await this.findOne(id);
     await this.productRepository.remove(product);
   }
+
+  /**
+   * Get all unique categories from products
+   */
+  async getCategories(): Promise<string[]> {
+    const products = await this.productRepository.find({
+      select: ['category']
+    });
+    
+    // Extract unique categories and sort them
+    const categories = Array.from(new Set(
+      products
+        .map(p => p.category)
+        .filter(c => c && c.trim() !== '')
+    )).sort();
+    
+    return categories;
+  }
 }

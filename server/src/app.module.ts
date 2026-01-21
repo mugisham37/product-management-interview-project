@@ -11,21 +11,28 @@ import { ProductsModule } from './products/products.module';
       envFilePath: '.env',
     }),
 
-    // Database module
+    // Database module - Auto-syncs entities in development, manual migrations in production
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres' as const,
-        host: configService.get<string>('DB_HOST') || 'localhost',
-        port: configService.get<number>('DB_PORT') || 5432,
-        username: configService.get<string>('DB_USERNAME') || 'postgres',
-        password: configService.get<string>('DB_PASSWORD') || 'password',
-        database: configService.get<string>('DB_DATABASE') || 'product_management',
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: configService.get('NODE_ENV') === 'development',
-        logging: configService.get('NODE_ENV') === 'development',
-        ssl: configService.get('NODE_ENV') === 'production' ? { rejectUnauthorized: false } : false,
-      }),
+      useFactory: (configService: ConfigService) => {
+        const isProduction = configService.get('NODE_ENV') === 'production';
+        const isDevelopment = configService.get('NODE_ENV') === 'development';
+
+        return {
+          type: 'postgres' as const,
+          host: configService.get<string>('DB_HOST') || 'localhost',
+          port: configService.get<number>('DB_PORT') || 5432,
+          username: configService.get<string>('DB_USERNAME') || 'postgres',
+          password: configService.get<string>('DB_PASSWORD') || 'moses',
+          database: configService.get<string>('DB_DATABASE') || 'projectmanagement',
+          entities: [__dirname + '/**/*.entity{.ts,.js}'],
+          synchronize: isDevelopment,
+          logging: isDevelopment ? ['error'] : false,
+          ssl: isProduction ? { rejectUnauthorized: false } : false,
+          retryAttempts: 3,
+          retryDelay: 1000,
+        };
+      },
       inject: [ConfigService],
     }),
 

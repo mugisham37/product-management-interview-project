@@ -8,39 +8,42 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule,
-    new FastifyAdapter({ logger: true })
-  );
+  try {
+    const app = await NestFactory.create<NestFastifyApplication>(
+      AppModule,
+      new FastifyAdapter({ logger: true })
+    );
 
-  // Enable CORS
-  app.enableCors({
-    origin: process.env['CORS_ORIGIN'] || 'http://localhost:3000',
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true,
-  });
+    // Enable CORS
+    app.enableCors({
+      origin: process.env['CORS_ORIGIN'] || 'http://localhost:3000',
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+      credentials: true,
+    });
 
-  // Global validation pipe
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-      transformOptions: {
-        enableImplicitConversion: true,
-      },
-    })
-  );
+    // Global validation pipe
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+        transformOptions: {
+          enableImplicitConversion: true,
+        },
+      })
+    );
 
-  const port = process.env['PORT'] || 3001;
-  
-  await app.listen(port, '0.0.0.0');
-  console.log(`🚀 Server running on http://localhost:${port}`);
-  console.log(`📊 Environment: ${process.env['NODE_ENV'] || 'development'}`);
+    const port = process.env['PORT'] || 3001;
+    
+    await app.listen(port, '0.0.0.0');
+    console.log(`✅ Database synchronized successfully`);
+    console.log(`🚀 Server running on http://localhost:${port}`);
+    console.log(`📊 Environment: ${process.env['NODE_ENV'] || 'development'}`);
+  } catch (error) {
+    console.error('❌ Error starting server:', error);
+    process.exit(1);
+  }
 }
 
-bootstrap().catch((error) => {
-  console.error('❌ Error starting server:', error);
-  process.exit(1);
-});
+bootstrap();

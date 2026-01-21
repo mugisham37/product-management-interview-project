@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import { useState } from 'react';
 import { Product } from '@/app/types/product';
 import {
   Dialog,
@@ -33,6 +34,7 @@ export function DeleteConfirmationDialog({
   onClose,
   onConfirm,
 }: DeleteConfirmationDialogProps) {
+  const [imageError, setImageError] = useState(false);
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -96,7 +98,7 @@ export function DeleteConfirmationDialog({
                     {product.category}
                   </Badge>
                 </div>
-                {product.imageUrl && (
+                {product.imageUrl && !imageError && (
                   <div className="w-12 h-12 bg-background rounded border overflow-hidden shrink-0">
                     <Image
                       src={product.imageUrl}
@@ -104,6 +106,7 @@ export function DeleteConfirmationDialog({
                       width={48}
                       height={48}
                       className="w-full h-full object-cover"
+                      onError={() => setImageError(true)}
                     />
                   </div>
                 )}
