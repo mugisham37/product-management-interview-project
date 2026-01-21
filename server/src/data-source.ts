@@ -14,5 +14,6 @@ export const AppDataSource = new DataSource({
   database: process.env['DB_DATABASE'] || 'projectmanagement',
   entities: [Product],
   synchronize: process.env['NODE_ENV'] === 'development',
-  logging: ['error'],
+  logging: process.env['NODE_ENV'] === 'development' ? true : ['error'],
+  ssl: process.env['NODE_ENV'] === 'production' ? { rejectUnauthorized: false } : false,
 });
